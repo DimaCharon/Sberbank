@@ -109,6 +109,14 @@
         </div>
       </div>
 
+      <div class="svcrow" id="homeSvc"></div>
+      <div class="adslot" id="homeAds"></div>
+      <div class="curcard">
+        <div class="curcard__head"><b>Курсы валют</b><span>обновлено сегодня</span></div>
+        <div class="currow"><i class="cur__i cur--usd">$</i><span class="cur__n">Доллар США<em>покупка 96,40 ₽</em></span><span class="cur__v"><b>98,10 ₽</b><u class="cur__d cur__d--dn">−0,35</u></span></div>
+        <div class="currow"><i class="cur__i cur--eur">€</i><span class="cur__n">Евро<em>покупка 104,20 ₽</em></span><span class="cur__v"><b>106,00 ₽</b><u class="cur__d cur__d--up">+0,12</u></span></div>
+      </div>
+
       <div class="hist">
         <div class="hist__head">
           <button class="hist__t" id="histToggle">
@@ -141,6 +149,7 @@
       <div class="sect"><div class="sect__t">Цели</div></div>
       <div class="goals" id="goals"></div>
       <button class="gbtn" id="addGoal">Новая цель</button>
+      <div class="adslot" id="savAds"></div>
       <div class="bottom-space"></div>
     </div>
   </section>
@@ -152,6 +161,7 @@
       <div class="tiles" id="lifeTiles"></div>
       <div class="sect"><div class="sect__t">Подписки</div></div>
       <div class="cards-col" id="subsList"></div>
+      <div class="adslot" id="lifeAds"></div>
       <div class="bottom-space"></div>
     </div>
   </section>
@@ -167,6 +177,9 @@
         <button class="lrow" data-pay="auto"><i class="lico l-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></svg></i><span>Автоплатежи</span><u class="arr"></u></button>
         <button class="lrow" data-pay="tpl"><i class="lico l-y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 9.7l5.4-.8L12 4Z"/></svg></i><span>Шаблоны</span><u class="arr"></u></button>
       </div>
+      <div class="sect"><div class="sect__t">Недавние платежи</div></div>
+      <div class="hist__list" id="payRecent"></div>
+      <div class="adslot" id="payAds"></div>
       <div class="sect"><div class="sect__t">Услуги</div></div>
       <div class="tiles" id="payTiles"></div>
       <div class="bottom-space"></div>
@@ -190,7 +203,12 @@
         <button class="dbtn" id="crCard">Заказать карту</button>
       </div>
       <div class="sect"><div class="sect__t">Мои кредиты</div></div>
+      <div class="cards-col">
+        <button class="lrow" id="crHist"><i class="lico l-b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4-2 1.4v-17Z"/><path d="M9.5 8.5h5M9.5 12h5"/></svg></i><span>Кредитная история</span><em class="lrow__v">отличная</em><u class="arr"></u></button>
+        <button class="lrow" id="crIns"><i class="lico l-g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.4c0 4.3 2.9 7.6 7 9.6 4.1-2 7-5.3 7-9.6V6l-7-3Z"/><path d="m9.4 11.8 1.9 1.9 3.5-3.6"/></svg></i><span>Страхование от потери работы</span><u class="arr"></u></button>
+      </div>
       <div class="empty" id="crEmpty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M9 14.2s1.2-1.6 3-1.6 3 1.6 3 1.6M9.4 9.6h.01M14.6 9.6h.01" stroke-width="2"/></svg><span>Активных кредитов нет</span></div>
+      <div class="adslot" id="crAds"></div>
       <div class="bottom-space"></div>
     </div>
   </section>

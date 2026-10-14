@@ -88,6 +88,7 @@
     haptics: true,
     notif: true,
     promoGone: false,
+    adsGone: [],
     txs: [],
     contacts: [],
     goals: [
@@ -603,7 +604,7 @@
         state.txs.unshift(tx);
         state.contacts = [{ name, phone }].concat(state.contacts.filter(c => c.phone !== phone)).slice(0, 6);
         state.bonus += Math.max(1, Math.round(v * 0.02));
-        save(); renderHome(); renderAcc(); renderHist();
+        save(); renderHome(); renderAcc(); renderHist(); renderPayRecent();
         showOk({
           title: 'Перевели', sum: v, who: name,
           note: 'Перевод в ' + bank.n + ' через СБП по номеру телефона ' + phone,
@@ -780,7 +781,7 @@
         const tx = { t: 'Кофейня «Пенка»', s: 'Оплата по QR · без комиссии', c: 'cafe', a: -v, d: Date.now(), fresh: 1 };
         state.txs.unshift(tx);
         state.bonus += 6;
-        save(); renderHome(); renderAcc(); renderHist();
+        save(); renderHome(); renderAcc(); renderHist(); renderPayRecent();
         showOk({ title: 'Оплатили', sum: v, who: 'Кофейня «Пенка»', note: 'Оплата по QR-коду · без комиссии', tx });
       });
     }, 2600);
@@ -1028,8 +1029,8 @@
   /* ───────── глаз ───────── */
   function applyEye() {
     $('#eyeIco').innerHTML = state.hidden
-      ? '<path d="M3 3l18 18"/><path d="M10.7 6.3A9.6 9.6 0 0 1 12 6.2c6 0 9.5 5.8 9.5 5.8a17 17 0 0 1-3.2 3.9M6.5 8A16.4 16.4 0 0 0 2.5 12S6 17.8 12 17.8a9.6 9.6 0 0 0 3.5-.7"/>'
-      : '<path d="M2.5 12S6 6.2 12 6.2 21.5 12 21.5 12 18 17.8 12 17.8 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>';
+      ? '<path d="M2.5 12S6 6.2 12 6.2 21.5 12 21.5 12 18 17.8 12 17.8 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>'
+      : '<path d="M3 3l18 18"/><path d="M10.7 6.3A9.6 9.6 0 0 1 12 6.2c6 0 9.5 5.8 9.5 5.8a17 17 0 0 1-3.2 3.9M6.5 8A16.4 16.4 0 0 0 2.5 12S6 17.8 12 17.8a9.6 9.6 0 0 0 3.5-.7"/>';
   }
 
   /* ───────── кнопки главной ───────── */
@@ -1061,6 +1062,57 @@
     else toast('Ссылка на совместный счёт скопирована');
   });
 
+  /* ───────── реклама и доп. контент ───────── */
+  const ADS = {
+    homeAds: [
+      { id: 'cafe5', i: '☕️', g: 'g1', t: 'Кэшбэк 5% в кафе', s: 'Весь месяц по карте ChБанка в кофейнях и ресторанах', btn: 'Активировать', act: () => toast('Кэшбэк 5% в кафе активирован ✨') },
+      { id: 'protect', i: '🛡️', g: 'g2', t: 'Защита средств', s: 'Бесплатная страховка счёта до 100 000 ₽', btn: 'Включить', act: () => toast('Демо: страховка подключена') }
+    ],
+    savAds: [{ id: 'dream', i: '💎', g: 'g3', t: 'Вклад «Мечта»', s: '14% годовых при открытии до конца месяца', btn: 'Открыть', act: () => openTopup('sav') }],
+    lifeAds: [{ id: 'chplay', i: '🎬', g: 'g2', t: 'Подписка ChPlay', s: 'Кино, сериалы и музыка — первый месяц 1 ₽', btn: 'Подключить', act: () => toast('Демо: подписка подключена') }],
+    payAds: [{ id: 'autozhkh', i: '⚡️', g: 'g1', t: 'Автоплатёж за ЖКХ', s: 'Счета будут оплачены вовремя и без просрочек', btn: 'Настроить', act: () => toast('Демо: автоплатёж настроен') }],
+    crAds: [{ id: 'preod', i: '⚡️', g: 'g3', t: 'Одобрено заранее: 500 000 ₽', s: 'От 4,9% годовых, без справок о доходе', btn: 'Получить', act: () => toast('Демо: кредит одобрен') }]
+  };
+  function renderAds(slot) {
+    const box = $('#' + slot); if (!box) return;
+    const list = (ADS[slot] || []).filter(a => !state.adsGone.includes(a.id));
+    box.innerHTML = list.map(a => `
+      <div class="adcard adcard--${a.g}" data-ad="${a.id}">
+        <button class="adcard__x" data-x="${a.id}" type="button" aria-label="Скрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <i class="adcard__i">${a.i}</i>
+        <span class="adcard__tx"><b>${esc(a.t)}</b><span>${esc(a.s)}</span></span>
+        <button class="gbtn gbtn--sm" data-go="${a.id}" type="button">${esc(a.btn)}</button>
+      </div>`).join('');
+    $$('[data-x]', box).forEach(x => x.addEventListener('click', e => {
+      e.stopPropagation();
+      state.adsGone.push(x.dataset.x); save(); haptic(8);
+      const card = x.closest('.adcard');
+      card.classList.add('is-gone'); setTimeout(() => card.remove(), 320);
+    }));
+    $$('[data-go]', box).forEach(b => b.addEventListener('click', () => {
+      haptic([12, 40, 12]);
+      const a = list.find(z => z.id === b.dataset.go);
+      a && a.act();
+    }));
+  }
+  function renderHomeSvc() {
+    const box = $('#homeSvc'); if (!box) return;
+    box.innerHTML = [0, 1, 4, 5, 7, 8].map(i => { const sv = SERVICES[i]; return `<button class="tile" data-s="${i}" type="button"><i>${sv.i}</i><span>${esc(sv.t)}</span></button>`; }).join('');
+    $$('.tile', box).forEach(b => b.addEventListener('click', () => { haptic(12); paySheet(SERVICES[+b.dataset.s]); }));
+  }
+  function renderPayRecent() {
+    const box = $('#payRecent'); if (!box) return;
+    const list = state.txs.filter(t => ['mobile', 'home', 'sub', 'fun', 'gov'].includes(t.c)).slice(0, 3);
+    box.innerHTML = list.length ? list.map((t, i) => opRow(t, i)).join('') : '<div class="empty"><span>Платежей пока нет</span></div>';
+    bindOps(box);
+  }
+  let crBound = false;
+  function bindCredit() {
+    if (crBound) return; crBound = true;
+    $('#crHist').addEventListener('click', () => toast('Кредитная история: отличная, скор 780'));
+    $('#crIns').addEventListener('click', () => toast('Демо: страхование доступно в приложении'));
+  }
+
   /* ───────── ripple ───────── */
   document.addEventListener('pointerdown', e => {
     const t = e.target.closest('.gbtn,.dbtn,.wbtn,.chip,.tile,.act3,.hbtn,.tab,.op,.lrow,.pill,.achip,.bank,.sq,.wtile,.pplitem,.srow,.srow2');
@@ -1084,6 +1136,8 @@
     applyEye(); paintSbp();
     renderHome(false); shownBal = state.acc.bal; renderHome(true);
     renderAcc(); renderSaves(); renderLife(); renderHist();
+    renderHomeSvc(); renderPayRecent(); bindCredit();
+    ['homeAds', 'savAds', 'lifeAds', 'payAds', 'crAds'].forEach(renderAds);
     go('home');
   }
   function start() {
