@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="ChБанк — мобильный банк: переводы по СБП, пополнение, платежи, история операций." />
+<title>ChБанк</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2321A038'/%3E%3Ctext x='32' y='44' font-family='Arial' font-size='30' font-weight='bold' fill='white' text-anchor='middle'%3ECh%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ══════════ РЕГИСТРАЦИЯ ══════════ -->
+  <section class="screen scr-reg is-active" id="scrReg">
+    <div class="reg">
+      <div class="reg__logo">
+        <span class="reg__mark">Ch</span><span class="reg__word">Банк</span>
+      </div>
+      <div class="reg__dots" id="regDots"><i></i><i></i><i></i><i></i></div>
+      <div class="reg__body" id="regBody"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ КОД-ПАРОЛЬ ══════════ -->
+  <section class="screen scr-pin wall-home" id="scrPin">
+    <div class="pinwrap">
+      <div class="reg__logo reg__logo--sm"><span class="reg__mark">Ch</span><span class="reg__word">Банк</span></div>
+      <div class="pin__title">Введите код</div>
+      <div class="pin__sub" id="pinWho"></div>
+      <div class="pin__dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+      <div class="pin__pad" id="pinPad"></div>
+      <button class="pin__face" id="pinFace" type="button">Войти по Face ID</button>
+    </div>
+  </section>
+
+  <!-- ══════════ ГЛАВНЫЙ ══════════ -->
+  <section class="screen scr-home wall-home" id="scrHome">
+    <div class="scroll" id="homeScroll">
+      <header class="hbar">
+        <button class="hbtn" id="btnAvatar" aria-label="Профиль">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 19.6a7.2 7.2 0 0 1 14 0"/></svg>
+        </button>
+        <button class="hsearch" id="btnSearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.6"/><path d="m20 20-3.4-3.4"/></svg>
+          <span>Поиск</span>
+        </button>
+        <button class="hbtn" id="btnChat" aria-label="Чат">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.4c0 4-3.8 7.2-8.5 7.2-.9 0-1.8-.1-2.6-.3L4.5 20l1.4-3.3a6.8 6.8 0 0 1-2.4-5.3c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z"/><path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01" stroke-width="2.4"/></svg>
+        </button>
+        <button class="hbtn" id="btnGrid" aria-label="Меню">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="4" y="4" width="6.6" height="6.6" rx="1.8"/><rect x="13.4" y="4" width="6.6" height="6.6" rx="1.8"/><rect x="4" y="13.4" width="6.6" height="6.6" rx="1.8"/><rect x="13.4" y="13.4" width="6.6" height="6.6" rx="1.8"/></svg>
+        </button>
+      </header>
+
+      <div class="wallet">
+        <div class="wallet__lbl">В кошельке</div>
+        <div class="wallet__row">
+          <button class="wallet__bal" id="btnWallet">
+            <span id="balMain">0,00 ₽</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg>
+          </button>
+          <span class="wallet__acts">
+            <button class="wact" id="btnEye" aria-label="Скрыть баланс">
+              <svg id="eyeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.7 6.3A9.6 9.6 0 0 1 12 6.2c6 0 9.5 5.8 9.5 5.8a17 17 0 0 1-3.2 3.9M6.5 8A16.4 16.4 0 0 0 2.5 12S6 17.8 12 17.8a9.6 9.6 0 0 0 3.5-.7"/></svg>
+            </button>
+            <button class="wact" id="btnDots" aria-label="Ещё">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></svg>
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <div class="wtiles">
+        <div class="wt-col">
+          <button class="sq" id="btnQr" aria-label="Сканер">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8.5 9.5a4 4 0 0 1 0 5M11.5 7.5a7 7 0 0 1 0 9"/></svg>
+          </button>
+          <button class="sq" id="btnShield" aria-label="Защита">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.4c0 4.3 2.9 7.6 7 9.6 4.1-2 7-5.3 7-9.6V6l-7-3Z"/><path d="m9.4 11.8 1.9 1.9 3.5-3.6"/></svg>
+          </button>
+        </div>
+        <button class="wtile wtile--card" id="tileCard">
+          <span class="wtile__top"><i class="cardmini"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4.5" width="20" height="15" rx="3.4" fill="url(#cg)"/><circle cx="8.4" cy="10" r="2.5" fill="#B7F27E" opacity=".9"/><circle cx="12" cy="12.6" r="2.5" fill="#3ED47E" opacity=".85"/><defs><linearGradient id="cg" x1="2" y1="4" x2="22" y2="20"><stop stop-color="#5BE07F"/><stop offset="1" stop-color="#12813A"/></linearGradient></defs></svg></i><em id="tileCardLast">••••</em></span>
+          <span class="wtile__bal" id="tileBal">0,00 ₽</span>
+          <span class="wtile__sub" id="tileAcc">Счёт •• ••••</span>
+        </button>
+        <button class="wtile" id="tileBonus">
+          <span class="wtile__top"><i class="bonusmini">C</i></span>
+          <span class="wtile__bal" id="tileBonusVal">0</span>
+          <span class="wtile__sub">ChСпасибо</span>
+        </button>
+      </div>
+
+      <div class="promo" id="promo">
+        <button class="promo__x" id="promoX" aria-label="Закрыть">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <div class="promo__txt">
+          <b>Копить — это просто</b>
+          <span>Со ставкой до 14% годовых по вкладу «Мечта»</span>
+        </div>
+        <div class="promo__r">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#21A038" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6.5 7.5 4h9L15 6.5"/><path d="M9 6.5h6c2.6 2 4 4.6 4 7.5 0 4-3.1 6.5-7 6.5s-7-2.5-7-6.5c0-2.9 1.4-5.5 4-7.5Z"/><path d="M12 10.5v6M9.8 12.6h4.4M9.8 14.8h4.4"/></svg>
+          <button class="gbtn gbtn--sm" id="promoBtn">Открыть</button>
+        </div>
+      </div>
+
+      <div class="svcrow" id="homeSvc"></div>
+      <div class="adslot" id="homeAds"></div>
+      <div class="curcard">
+        <div class="curcard__head"><b>Курсы валют</b><span>обновлено сегодня</span></div>
+        <div class="currow"><i class="cur__i cur--usd">$</i><span class="cur__n">Доллар США<em>покупка 96,40 ₽</em></span><span class="cur__v"><b>98,10 ₽</b><u class="cur__d cur__d--dn">−0,35</u></span></div>
+        <div class="currow"><i class="cur__i cur--eur">€</i><span class="cur__n">Евро<em>покупка 104,20 ₽</em></span><span class="cur__v"><b>106,00 ₽</b><u class="cur__d cur__d--up">+0,12</u></span></div>
+      </div>
+
+      <div class="hist">
+        <div class="hist__head">
+          <button class="hist__t" id="histToggle">
+            <b>История</b>
+            <svg id="histChev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 6-6 6 6"/></svg>
+          </button>
+          <button class="pill" id="histMore">Ещё
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div class="hist__list" id="homeHist"></div>
+      </div>
+      <div class="bottom-space"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ НАКОПЛЕНИЯ ══════════ -->
+  <section class="screen" id="scrSaves">
+    <div class="scroll">
+      <div class="phead"><span class="phead__t">Накопления</span></div>
+      <div class="savecard">
+        <div class="savecard__t">Накопительный счёт</div>
+        <div class="savecard__bal" id="savBal">0,00 ₽</div>
+        <div class="savecard__s">Ставка 14% годовых · капитализация ежемесячно</div>
+        <div class="savecard__row">
+          <button class="gbtn gbtn--sm" id="savTop">Пополнить</button>
+          <button class="dbtn dbtn--sm" id="savOut">Вывести</button>
+        </div>
+      </div>
+      <div class="sect"><div class="sect__t">Цели</div></div>
+      <div class="goals" id="goals"></div>
+      <button class="gbtn" id="addGoal">Новая цель</button>
+      <div class="adslot" id="savAds"></div>
+      <div class="bottom-space"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ ДЛЯ ЖИЗНИ ══════════ -->
+  <section class="screen" id="scrLife">
+    <div class="scroll">
+      <div class="phead"><span class="phead__t">Для жизни</span></div>
+      <div class="tiles" id="lifeTiles"></div>
+      <div class="sect"><div class="sect__t">Подписки</div></div>
+      <div class="cards-col" id="subsList"></div>
+      <div class="adslot" id="lifeAds"></div>
+      <div class="bottom-space"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ ПЛАТЕЖИ ══════════ -->
+  <section class="screen" id="scrPay">
+    <div class="scroll">
+      <div class="phead"><span class="phead__t">Платежи</span></div>
+      <div class="cards-col">
+        <button class="lrow" data-pay="phone"><i class="lico l-g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.8" width="11" height="18.4" rx="3"/><path d="M11 18.4h2"/></svg></i><span>По номеру телефона</span><u class="arr"></u></button>
+        <button class="lrow" data-pay="own"><i class="lico l-b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v13M8 4 5 7M8 4l3 3M16 20V7M16 20l3-3M16 20l-3-3"/></svg></i><span>Между своими счетами</span><u class="arr"></u></button>
+        <button class="lrow" data-pay="req"><i class="lico l-o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></i><span>По реквизитам</span><u class="arr"></u></button>
+        <button class="lrow" data-pay="auto"><i class="lico l-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></svg></i><span>Автоплатежи</span><u class="arr"></u></button>
+        <button class="lrow" data-pay="tpl"><i class="lico l-y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 9.7l5.4-.8L12 4Z"/></svg></i><span>Шаблоны</span><u class="arr"></u></button>
+      </div>
+      <div class="sect"><div class="sect__t">Недавние платежи</div></div>
+      <div class="hist__list" id="payRecent"></div>
+      <div class="adslot" id="payAds"></div>
+      <div class="sect"><div class="sect__t">Услуги</div></div>
+      <div class="tiles" id="payTiles"></div>
+      <div class="bottom-space"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ КРЕДИТЫ ══════════ -->
+  <section class="screen" id="scrCredit">
+    <div class="scroll">
+      <div class="phead"><span class="phead__t">Кредиты</span></div>
+      <div class="offer">
+        <div class="offer__t">Кредит наличными</div>
+        <div class="offer__sum">до 5 000 000 ₽</div>
+        <div class="offer__s">От 4,9% годовых · решение за 2 минуты</div>
+        <button class="gbtn" id="crBtn">Оформить</button>
+      </div>
+      <div class="offer offer--card">
+        <div class="offer__t">Кредитная карта</div>
+        <div class="offer__sum">120 дней без процентов</div>
+        <div class="offer__s">Бесплатное обслуживание навсегда</div>
+        <button class="dbtn" id="crCard">Заказать карту</button>
+      </div>
+      <div class="sect"><div class="sect__t">Мои кредиты</div></div>
+      <div class="cards-col">
+        <button class="lrow" id="crHist"><i class="lico l-b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4-2 1.4v-17Z"/><path d="M9.5 8.5h5M9.5 12h5"/></svg></i><span>Кредитная история</span><em class="lrow__v">отличная</em><u class="arr"></u></button>
+        <button class="lrow" id="crIns"><i class="lico l-g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.4c0 4.3 2.9 7.6 7 9.6 4.1-2 7-5.3 7-9.6V6l-7-3Z"/><path d="m9.4 11.8 1.9 1.9 3.5-3.6"/></svg></i><span>Страхование от потери работы</span><u class="arr"></u></button>
+      </div>
+      <div class="empty" id="crEmpty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M9 14.2s1.2-1.6 3-1.6 3 1.6 3 1.6M9.4 9.6h.01M14.6 9.6h.01" stroke-width="2"/></svg><span>Активных кредитов нет</span></div>
+      <div class="adslot" id="crAds"></div>
+      <div class="bottom-space"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ ЭКРАН СЧЁТА ══════════ -->
+  <div class="push wall-acc" id="pushAcc">
+    <div class="scroll">
+      <header class="pbar">
+        <button class="hbtn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5.5M11 5.5 4.5 12l6.5 6.5"/></svg></button>
+        <span></span>
+        <button class="hbtn" id="accGear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M18.9 14.4a1.5 1.5 0 0 0 .3 1.7l.1.1a1.8 1.8 0 1 1-2.6 2.6l-.1-.1a1.5 1.5 0 0 0-2.5 1v.3a1.8 1.8 0 1 1-3.6 0v-.2a1.5 1.5 0 0 0-2.6-1l-.1.1a1.8 1.8 0 1 1-2.6-2.6l.1-.1a1.5 1.5 0 0 0-1-2.5H4a1.8 1.8 0 1 1 0-3.6h.2a1.5 1.5 0 0 0 1-2.6l-.1-.1a1.8 1.8 0 1 1 2.6-2.6l.1.1a1.5 1.5 0 0 0 1.7.3h.1a1.5 1.5 0 0 0 .9-1.4V4a1.8 1.8 0 1 1 3.6 0v.2a1.5 1.5 0 0 0 2.5 1l.1-.1a1.8 1.8 0 1 1 2.6 2.6l-.1.1a1.5 1.5 0 0 0 1 2.5h.3a1.8 1.8 0 1 1 0 3.6h-.2a1.5 1.5 0 0 0-1.4.9Z"/></svg></button>
+      </header>
+      <div class="acc">
+        <div class="acc__lbl">Платёжный счёт •• <span id="accLast">••••</span></div>
+        <div class="acc__bal" id="accBal">0,00 ₽</div>
+        <div class="acc__spend" id="accSpend">Расходы в октябре: 0 ₽</div>
+        <div class="accchips">
+          <button class="achip achip--sq" id="accPlus" aria-label="Пополнить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="achip" id="accPay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="m8.6 12.2 2.3 2.3 4.5-4.6"/></svg>Pay</button>
+          <button class="achip" id="accCard"><i class="cardmini"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4.5" width="20" height="15" rx="3.4" fill="url(#cg2)"/><circle cx="8.4" cy="10" r="2.5" fill="#B7F27E" opacity=".9"/><circle cx="12" cy="12.6" r="2.5" fill="#3ED47E" opacity=".85"/><defs><linearGradient id="cg2" x1="2" y1="4" x2="22" y2="20"><stop stop-color="#5BE07F"/><stop offset="1" stop-color="#12813A"/></linearGradient></defs></svg></i><span class="achip__t">МИР Chкарта…</span><span class="achip__n">•• <span id="accCardLast">••••</span></span></button>
+        </div>
+        <div class="acts3">
+          <button class="act3" id="actTransfer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M13 7l5 5-5 5M4 8h6M4 16h6"/></svg><span>Перевести</span></button>
+          <button class="act3" id="actTopup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M9.4 8.2h2.9c1.5 0 2.5.9 2.5 2.1 0 1.5-1.4 2.2-3 2.2H10m0 0v3M9 10.3h4.4M15.6 6.4l1.6-1.6M17.2 6.4l-1.6-1.6"/></svg><span>Пополнить</span></button>
+          <button class="act3" id="actPay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9H7M10 5.5 6.5 9 10 12.5M4 15h13M14 11.5 17.5 15 14 18.5"/></svg><span>Оплатить</span></button>
+        </div>
+        <button class="info" id="infoTariff">
+          <span class="info__tx"><b>Условия тарифа</b><i>Стоимость, бонусы и лимиты</i></span>
+          <span class="chevsq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg></span>
+        </button>
+        <div class="info info--col">
+          <span class="info__tx"><b>Совместный счёт</b><i>Для планирования общего бюджета и оплаты совместных покупок с близкими</i></span>
+          <button class="dbtn" id="shareAcc">Поделиться счётом</button>
+        </div>
+      </div>
+      <div class="bottom-space-sm"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ НОВЫЙ ПЕРЕВОД ══════════ -->
+  <div class="push" id="pushTr">
+    <div class="scroll">
+      <header class="pbar">
+        <button class="hbtn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5.5M11 5.5 4.5 12l6.5 6.5"/></svg></button>
+        <span class="pbar__t">Новый перевод</span><span></span>
+      </header>
+      <div class="tr">
+        <div class="rcard" id="trRcard">
+          <span class="rcard__tx">
+            <input id="trPhone" type="tel" inputmode="tel" placeholder="+7 (___) ___-__-__" autocomplete="off" />
+            <input id="trName" type="text" placeholder="Имя и фамилия · Ольга К." autocomplete="off" />
+          </span>
+          <span class="rcard__ava" id="trAva">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 19.6a7.2 7.2 0 0 1 14 0"/></svg>
+          </span>
+        </div>
+        <div class="banks" id="trBanks"></div>
+        <div class="fcard">
+          <label>Сколько</label>
+          <input id="trSum" type="text" inputmode="decimal" placeholder="0 ₽" autocomplete="off" />
+        </div>
+        <div class="chipsrow" id="trChips">
+          <button class="chip" data-v="1000">1 000 ₽</button>
+          <button class="chip" data-v="2000">2 000 ₽</button>
+          <button class="chip" data-v="5000">5 000 ₽</button>
+        </div>
+        <button class="fcard fcard--row" id="trFrom">
+          <span class="fcard__tx"><label>Откуда</label><b id="trFromBal">0,00 ₽</b><i id="trFromName">Платёжный счёт •• ••••</i></span>
+          <span class="fromsel"><i class="rsq">₽</i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"/></svg></span>
+        </button>
+        <div class="fcard"><input id="trMsg" type="text" placeholder="Сообщение" autocomplete="off" /></div>
+        <div class="agree"><i class="sbpmark" data-sbp></i><span>Соглашаюсь с <b>условиями СБП</b></span></div>
+        <button class="gbtn gbtn--big" id="trGo">Перевести 0 ₽</button>
+      </div>
+      <div class="bottom-space-sm"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ ПОПОЛНЕНИЕ ══════════ -->
+  <div class="push" id="pushTop">
+    <div class="scroll">
+      <header class="pbar">
+        <button class="hbtn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5.5M11 5.5 4.5 12l6.5 6.5"/></svg></button>
+        <span class="pbar__t">Пополнение</span><span></span>
+      </header>
+      <div class="tr">
+        <div class="fcard">
+          <label>Сколько</label>
+          <input id="topSum" type="text" inputmode="decimal" placeholder="0 ₽" autocomplete="off" />
+        </div>
+        <div class="chipsrow" id="topChips">
+          <button class="chip" data-v="1000">1 000 ₽</button>
+          <button class="chip" data-v="5000">5 000 ₽</button>
+          <button class="chip" data-v="10000">10 000 ₽</button>
+          <button class="chip" data-v="25000">25 000 ₽</button>
+        </div>
+        <button class="fcard fcard--row" id="topTo">
+          <span class="fcard__tx"><label>Куда</label><b id="topToName">Платёжный счёт •• ••••</b><i>Деньги поступят мгновенно</i></span>
+          <span class="fromsel"><i class="rsq">₽</i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"/></svg></span>
+        </button>
+        <div class="agree"><i class="sbpmark" data-sbp></i><span>Пополнение без комиссии</span></div>
+        <button class="gbtn gbtn--big" id="topGo">Пополнить 0 ₽</button>
+      </div>
+      <div class="bottom-space-sm"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ ИСТОРИЯ ОПЕРАЦИЙ ══════════ -->
+  <div class="push" id="pushHist">
+    <div class="scroll">
+      <header class="pbar">
+        <button class="hbtn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5.5M11 5.5 4.5 12l6.5 6.5"/></svg></button>
+        <span class="pbar__t">История</span><span></span>
+      </header>
+      <div class="chipsrow chipsrow--filt" id="histFilt">
+        <button class="chip is-on" data-f="all">Все</button>
+        <button class="chip" data-f="expense">Расходы</button>
+        <button class="chip" data-f="income">Доходы</button>
+        <button class="chip" data-f="p2p">Переводы</button>
+      </div>
+      <div class="histfull" id="histFull"></div>
+      <div class="bottom-space-sm"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ ЧАТ ══════════ -->
+  <div class="push push--chat" id="pushChat">
+    <header class="pbar pbar--solid">
+      <button class="hbtn" data-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5.5M11 5.5 4.5 12l6.5 6.5"/></svg></button>
+      <span class="pbar__t">Помощник</span>
+      <span class="pbar__on"><i></i>онлайн</span>
+    </header>
+    <div class="chatscroll" id="chatScroll"></div>
+    <div class="chatquick" id="chatQuick"></div>
+    <form class="chatbar" id="chatForm">
+      <input id="chatText" type="text" placeholder="Напишите сообщение…" autocomplete="off" />
+      <button class="sendbtn" type="submit" aria-label="Отправить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z"/></svg></button>
+    </form>
+  </div>
+
+  <!-- ══════════ НИЖНЯЯ НАВИГАЦИЯ ══════════ -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab is-on" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 10.4 8.5-6.6 8.5 6.6"/><path d="M6 9.4V19a1.4 1.4 0 0 0 1.4 1.4h9.2A1.4 1.4 0 0 0 18 19V9.4"/><path d="M10 20.4v-5.2h4v5.2"/></svg><span>Главный</span></button>
+    <button class="tab" data-tab="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M6 19V11M12 19V5M18 19v-6"/></svg><span>Накопления</span></button>
+    <button class="tab" data-tab="life"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8 2.5-5Z"/></svg><span>Для жизни</span></button>
+    <button class="tab" data-tab="pay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3.4"/><path d="M14.5 9 18 12l-3.5 3M18 12H9"/></svg><span>Платежи</span></button>
+    <button class="tab" data-tab="credit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.4A2.4 2.4 0 0 1 6.4 5h11.2A2.4 2.4 0 0 1 20 7.4v9.2a2.4 2.4 0 0 1-2.4 2.4H6.4A2.4 2.4 0 0 1 4 16.6V7.4Z"/><path d="M4 10h16"/><path d="M15.5 14.5h2"/></svg><span>Кредиты</span></button>
+  </nav>
+
+  <!-- ══════════ УСПЕХ ══════════ -->
+  <div class="fullscr" id="fullOk">
+    <div class="okwrap">
+      <div class="okcard">
+        <svg class="okcheck" viewBox="0 0 64 48" fill="none">
+          <defs><linearGradient id="okg" x1="6" y1="24" x2="58" y2="10" gradientUnits="userSpaceOnUse"><stop stop-color="#8BD43C"/><stop offset="1" stop-color="#20C5A6"/></linearGradient></defs>
+          <path d="M8 26 24 41 56 8" stroke="url(#okg)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <b class="okcard__t" id="okTitle">Перевели</b>
+        <div class="okcard__sum"><span id="okSum">0 ₽</span><i class="sbpmark sbpmark--lg" data-sbp></i></div>
+        <span class="okcard__s" id="okFee">Комиссия 0 ₽</span>
+        <span class="okcard__s" id="okWho"></span>
+        <button class="wbtn" id="okHome">На главный</button>
+        <button class="dbtn" id="okCheck">Чек</button>
+      </div>
+      <div class="oknote" id="okNote"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ ОБРАБОТКА ══════════ -->
+  <div class="fullscr fullscr--proc" id="fullProc">
+    <div class="proc"><div class="proc__ring"></div><div class="proc__t" id="procT">Переводим</div><div class="proc__dots"><i></i><i></i><i></i></div></div>
+  </div>
+
+  <div class="sheets" id="sheets"></div>
+  <div class="toasts" id="toasts"></div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>
