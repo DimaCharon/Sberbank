@@ -45,7 +45,7 @@
   function haptic(p) { if (!state.haptics) return; try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
 
   /* СБП-значок (декоративный) */
-  const SBP_SVG = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 12 12 2.5 18.5 6.5Z" fill="#F58220"/><path d="M12 12 21.5 12 17.5 18.5Z" fill="#E4007C"/><path d="M12 12 12 21.5 5.5 17.5Z" fill="#2E6FF2"/><path d="M12 12 2.5 12 6.5 5.5Z" fill="#21A038"/></svg>';
+  const SBP_SVG = '<svg viewBox="0 0 100 100" fill="none"><polygon points="46,17 54,26 54,48 46,41" fill="#FFC533"/><polygon points="46,17 78,35 64,35 54,26" fill="#F58220"/><polygon points="78,35 64,35 54,41 54,49" fill="#E4007C"/><polygon points="22,30 30,38 30,62 22,70" fill="#7C6BC4"/><polygon points="22,70 46,61 46,53 30,62" fill="#9B5FA5"/><polygon points="46,56 54,64 54,87 46,79" fill="#8DC63F"/><polygon points="46,79 78,64 64,64 54,72" fill="#009B48"/><polygon points="22,30 78,63 78,71 22,38" fill="#00A3E0"/></svg>';
   function paintSbp() { $$('[data-sbp]').forEach(n => { if (!n.dataset.done) { n.innerHTML = SBP_SVG; n.dataset.done = 1; } }); }
 
   /* ───────── категории операций ───────── */
@@ -59,7 +59,8 @@
     p2p: { c: '#21A038', sub: 'Переводы', ico: 'out' }, p2pin: { c: '#21A038', sub: 'Переводы', ico: 'in' },
     topup: { c: '#21A038', sub: 'Пополнение', ico: 'plus' }, self: { c: '#2E6FF2', sub: 'Между своими', ico: 'swap' },
     bonus: { c: '#21A038', sub: 'Бонусы', ico: 'star' },
-    loan: { c: '#21A038', sub: 'Кредиты', ico: 'in' }
+    loan: { c: '#21A038', sub: 'Кредиты', ico: 'in' },
+    req: { c: '#64748B', sub: 'По реквизитам' }
   };
   const ICO = {
     in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13M12 18l-5-5M12 18l5-5"/></svg>',
@@ -93,6 +94,10 @@
     txs: [],
     contacts: [],
     loans: [],
+    subsOff: [],
+    auto: { zhkh: false, mobile: false, sub: false },
+    chplay: false, protect: false, cafe5: false, insured: false, face: true,
+    cardOrder: 0,
     goals: [
       { t: 'Отпуск у моря', sum: 120000, have: 46500 },
       { t: 'Новый ноутбук', sum: 90000, have: 71200 }
@@ -486,9 +491,10 @@
       if (a === 'new') { S.close(); openTransfer(); }
       if (a === 'contacts') { S.close(); contactsSheet(); }
       if (a === 'own') { S.close(); ownSheet(); }
-      if (a === 'world') toast('Демо: переводы за рубеж недоступны');
+      if (a === 'world') { S.close(); openTransfer({ bank: 'world' }); toast('Перевод за рубеж: выберите получателя'); }
       if (a === 'pay') { S.close(); go('pay'); }
-      if (a === 'tpl' || a === 'auto') toast('Демо: раздел появится позже');
+      if (a === 'tpl') { S.close(); tplSheet(); }
+      if (a === 'auto') { S.close(); autoSheet(); }
     });
   }
 
@@ -602,6 +608,7 @@
     inm.value = pre && pre.name ? pre.name : '';
     isum.value = '';
     $('#trMsg').value = '';
+    if (pre && pre.bank) trBank = pre.bank; else trBank = 'sber';
     trFromAcc = 'acc';
     const refreshAva = () => {
       const n = inm.value.trim();
@@ -719,6 +726,78 @@
     upd();
   }
 
+  /* ───────── справка по операции ───────── */
+  let lastCert = null;
+  function stampSvg() {
+    return `<svg viewBox="0 0 120 120"><defs><path id="cp${stampN++}" d="M60,60 m-42,0 a42,42 0 1,1 84,0 a42,42 0 1,1 -84,0"/></defs>
+      <circle cx="60" cy="60" r="54" fill="none" stroke="#2b3a8f" stroke-width="2.4" opacity=".85"/>
+      <circle cx="60" cy="60" r="30" fill="none" stroke="#2b3a8f" stroke-width="1.6" opacity=".85"/>
+      <text fill="#2b3a8f" font-size="10" letter-spacing="1.4" opacity=".9"><textPath href="#cp${stampN - 1}">ЧАО «CHБАНК» · ЦЕНТР ЗАБОТЫ О КЛИЕНТАХ · </textPath></text>
+      <text x="60" y="57" text-anchor="middle" fill="#2b3a8f" font-size="14" font-weight="700">CH</text>
+      <text x="60" y="73" text-anchor="middle" fill="#2b3a8f" font-size="8">МОСКВА</text></svg>`;
+  }
+  let stampN = 0;
+  function certText(t) {
+    return 'ChБанк · Справка по операции\n' + t.t + '\n' + signed(t.a) + '\n' + full(t.d) + '\nСтатус: ' + (t.st === 'decl' ? 'платёж отклонён' : 'платёж выполнен');
+  }
+  function openCert(t) {
+    const c = CAT[t.c] || CAT.shop;
+    const auth = String(hash(t.t + t.d)).slice(0, 6);
+    const u = state.user || { name: 'Клиент ChБанка' };
+    const out = t.a < 0;
+    lastCert = t;
+    $('#certPaper').innerHTML = `
+      <div class="cert__head">
+        <span class="cert__logo"><i>Ch</i>CHБАНК</span>
+        <span class="cert__addr">ул. Пушкина, д. 10, Москва, 101000<br>+7 800 100-00-00 · www.chbank.ru</span>
+      </div>
+      <div class="cert__date">Сформировано в ChБанк Онлайн ${new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+      <div class="cert__t">Справка по операции</div>
+      <p class="cert__p">ЧАО «ChБанк» сообщает, что указанная ниже операция ${out ? 'списания' : 'зачисления'} была совершена по платёжному счёту •• ${esc(state.acc.last4)}, держателем которого является ${esc(u.name)}.</p>
+      <div class="cert__grid">
+        <div><span>Описание</span><b>${esc(t.t)} · RUS</b></div>
+        <div><span>Статус операции</span><b>${t.st === 'decl' ? 'Платёж отклонён' : 'Платёж выполнен'}</b></div>
+        <div><span>Операция совершена</span><b>${esc(full(t.d))}</b></div>
+        <div><span>Тип операции</span><b>${esc(c.sub || t.s)}</b></div>
+        <div><span>Сумма в валюте счёта</span><b>${rub(Math.abs(t.a))}</b></div>
+        <div><span>Сумма в валюте операции</span><b>${rub(Math.abs(t.a))}</b></div>
+        <div><span>Код авторизации</span><b>${auth}</b></div>
+        <div><span>Комиссия</span><b>0 ₽</b></div>
+      </div>
+      <div class="cert__sign">
+        <div class="cert__sigline">
+          <svg viewBox="0 0 120 40" class="cert__sig"><path d="M6 28c14-18 20-20 24-16s-6 20 2 20 14-22 22-20 2 22 10 20 12-16 20-14 8 8 30 4" fill="none" stroke="#2b3a8f" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <span class="cert__stamp">${stampSvg()}</span>
+        </div>
+        <div class="cert__who">${esc(u.name)}<br>Управляющий директор Дивизиона «Забота о клиентах»</div>
+      </div>
+      <div class="cert__fn">¹ Документ сформирован электронно и не требует печати.<br>² По курсу банка на дату обработки операции. Данные демонстрационные.</div>`;
+    const f = $('#fullCert');
+    f.classList.remove('is-open'); void f.offsetWidth; f.classList.add('is-open');
+    $('.cert__scroll', f).scrollTop = 0;
+    haptic(10);
+  }
+  $('#certX').addEventListener('click', () => { $('#fullCert').classList.remove('is-open'); haptic(6); });
+  $('#certSh').addEventListener('click', () => {
+    if (!lastCert) return;
+    const txt = certText(lastCert);
+    if (navigator.share) navigator.share({ title: 'Справка по операции', text: txt }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Справка скопирована')).catch(() => toast('Справка скопирована'));
+    else toast('Справка скопирована');
+  });
+  $('#certDl').addEventListener('click', () => {
+    if (!lastCert) return;
+    try {
+      const blob = new Blob(['<meta charset="utf-8"><title>Справка по операции</title><body style="font-family:Georgia,serif;margin:24px">' + $('#certPaper').innerHTML], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'spravka-chbank.html';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast('Справка сохранена в файлы');
+    } catch (e) { toast('Справка сохранена'); }
+  });
+  $('#certPr').addEventListener('click', () => { try { window.print(); } catch (e) { toast('Печать недоступна'); } });
+
   /* ───────── чек операции ───────── */
   function receipt(t) {
     const c = CAT[t.c] || CAT.shop;
@@ -737,10 +816,12 @@
           ${t.msg ? `<div class="det"><span>Сообщение</span><b>${esc(t.msg)}</b></div>` : ''}
         </div>
       </div>
-      <div class="sheet__foot">
-        <button class="dbtn" id="rcShare" type="button">Поделиться чеком</button>
+      <div class="sheet__foot" style="display:flex;gap:10px">
+        <button class="gbtn" id="rcCert" type="button" style="flex:1">Справка по операции</button>
+        <button class="dbtn" id="rcShare" type="button" style="flex:1">Поделиться</button>
       </div>`,
       onMount(S) {
+        $('#rcCert', S.panel).addEventListener('click', () => { S.close(); setTimeout(() => openCert(t), 300); });
         $('#rcShare', S.panel).addEventListener('click', () => {
           haptic(12);
           const txt = 'ChБанк · ' + t.t + '\n' + signed(t.a) + '\n' + full(t.d);
@@ -820,7 +901,7 @@
       html: `<div class="sheet__t">Сканер QR</div>
       <div class="sheet__s">Наведите камеру на код продавца</div>
       <div class="sheet__body">
-        <div class="qr"><div class="qr__cam"></div><div class="qr__frame"><i></i><i></i><i></i><i></i><div class="qr__line"></div></div><div class="qr__t">Демо: код найдётся сам через пару секунд</div></div>
+        <div class="qr"><div class="qr__cam"></div><div class="qr__frame"><i></i><i></i><i></i><i></i><div class="qr__line"></div></div><div class="qr__t">Наведите рамку на QR-код — оплата пройдёт сама</div></div>
       </div>`,
       onClose() { clearTimeout(timer); }
     });
@@ -845,10 +926,11 @@
   /* ───────── накопления ───────── */
   function renderSaves() {
     $('#savBal').textContent = state.hidden ? '••••••' : rub(state.sav.bal, 2);
-    $('#goals').innerHTML = state.goals.map(g => {
+    $('#goals').innerHTML = state.goals.map((g, i) => {
       const p = clamp(Math.round(g.have / g.sum * 100), 0, 100);
-      return `<div class="goal"><div class="goal__t"><span>${esc(g.t)}</span><em>${rub(g.have)} / ${rub(g.sum)}</em></div><div class="goal__bar"><b style="width:${p}%"></b></div><div class="goal__s">Осталось ${rub(g.sum - g.have)} · ${p}%</div></div>`;
+      return `<div class="goal" data-g="${i}"><div class="goal__t"><span>${esc(g.t)}</span><em>${rub(g.have)} / ${rub(g.sum)}</em></div><div class="goal__bar"><b style="width:${p}%"></b></div><div class="goal__s">Осталось ${rub(g.sum - g.have)} · ${p}% · тапните, чтобы отложить</div></div>`;
     }).join('');
+    $$('#goals .goal').forEach(g => g.addEventListener('click', () => { haptic(10); goalTopSheet(+g.dataset.g); }));
   }
   $('#savTop').addEventListener('click', () => openTopup('sav'));
   $('#savOut').addEventListener('click', () => {
@@ -859,16 +941,264 @@
     save(); renderHome(); renderAcc(); renderSaves(); renderHist();
     toast(rub(v) + ' выведено на платёжный счёт');
   });
-  $('#addGoal').addEventListener('click', () => toast('Демо: создание целей скоро'));
+  $('#addGoal').addEventListener('click', () => goalSheet());
+
+  const baseSubs = () => [
+    { t: 'Музыка+', p: 299, c: 'l-pk' }, { t: 'Кино онлайн', p: 399, c: 'l-p' }, { t: 'Облако 100 ГБ', p: 149, c: 'l-b' }
+  ].concat(state.chplay ? [{ t: 'ChPlay', p: 199, c: 'l-o' }] : []);
+
+  function goalSheet() {
+    sheet({
+      html: `<div class="sheet__t">Новая цель</div><div class="sheet__s">Например: «Велосипед» или «Подарок маме»</div>
+        <div class="sheet__body">
+          <div class="fcard"><label>Название</label><input id="gName" type="text" placeholder="Мечта" autocomplete="off"></div>
+          <div class="fcard"><label>Сколько нужно</label><input id="gSum" type="text" inputmode="numeric" placeholder="0 ₽" autocomplete="off"></div>
+        </div>
+        <div class="sheet__foot"><button class="gbtn" id="gGo" type="button">Создать цель</button></div>`,
+      onMount(S) {
+        $('#gGo', S.panel).addEventListener('click', () => {
+          const t = $('#gName', S.panel).value.trim(), v = parseSum($('#gSum', S.panel).value);
+          if (!t || !v) { toast('Укажите название и сумму', 'err'); haptic([16, 40, 16]); return; }
+          state.goals.push({ t, sum: v, have: 0 }); save(); renderSaves(); haptic(12); S.close();
+          toast('Цель «' + t + '» создана');
+        });
+      }
+    });
+  }
+  function goalTopSheet(i) {
+    const g = state.goals[i]; if (!g) return;
+    sheet({
+      html: `<div class="sheet__t">${esc(g.t)}</div><div class="sheet__s">Собрали ${rub(g.have)} из ${rub(g.sum)}</div>
+        <div class="sheet__body">
+          <div class="fcard"><label>Отложить с платёжного счёта</label><input id="gtSum" type="text" inputmode="numeric" placeholder="0 ₽" autocomplete="off"></div>
+          <div class="chipsrow">${[1000, 5000, 10000].map(v => `<button class="chip" data-v="${v}" type="button">${v.toLocaleString('ru-RU')} ₽</button>`).join('')}</div>
+        </div>
+        <div class="sheet__foot"><button class="gbtn" id="gtGo" type="button">Отложить</button></div>`,
+      onMount(S) {
+        const inp = $('#gtSum', S.panel);
+        $$('.chip', S.panel).forEach(c => c.addEventListener('click', () => { inp.value = num(c.dataset.v).replace(/\B(?=(\d{3})+(?!\d))/g, NB); haptic(10); }));
+        $('#gtGo', S.panel).addEventListener('click', () => {
+          const v = parseSum(inp.value);
+          if (!v) { toast('Укажите сумму', 'err'); return; }
+          if (v > state.acc.bal) { toast('Недостаточно средств', 'err'); haptic([20, 50, 20]); return; }
+          state.acc.bal = Math.round((state.acc.bal - v) * 100) / 100; g.have += v;
+          state.txs.unshift({ t: 'Цель «' + g.t + '»', s: 'Отложено на накопительный', c: 'self', a: -v, d: Date.now(), fresh: 1 });
+          save(); renderSaves(); renderHome(); renderAcc(); renderHist(); S.close();
+          toast('В цель «' + g.t + '» отложено ' + rub(v));
+        });
+      }
+    });
+  }
+  function reqSheet() {
+    sheet({
+      html: `<div class="sheet__t">По реквизитам</div><div class="sheet__s">Оплата организации по счёту · комиссия 0 ₽</div>
+        <div class="sheet__body">
+          <div class="fcard"><label>Название организации</label><input id="rqName" type="text" placeholder="ООО «Ромашка»" autocomplete="off"></div>
+          <div class="fcard"><label>Счёт получателя (20 цифр)</label><input id="rqAcc" class="f-sm" type="tel" inputmode="numeric" placeholder="40802810…" autocomplete="off"></div>
+          <div class="fcard"><label>Сумма</label><input id="rqSum" type="text" inputmode="decimal" placeholder="0 ₽" autocomplete="off"></div>
+        </div>
+        <div class="sheet__foot"><button class="gbtn" id="rqGo" type="button">Оплатить</button></div>`,
+      onMount(S) {
+        $('#rqGo', S.panel).addEventListener('click', () => {
+          const nm = $('#rqName', S.panel).value.trim(), acc = num($('#rqAcc', S.panel).value), v = parseSum($('#rqSum', S.panel).value);
+          if (!nm) { toast('Укажите организацию', 'err'); return; }
+          if (acc.length !== 20) { toast('Счёт получателя — 20 цифр', 'err'); haptic([16, 40, 16]); return; }
+          if (!v) { toast('Укажите сумму', 'err'); return; }
+          if (v > state.acc.bal) { toast('Недостаточно средств', 'err'); haptic([20, 50, 20]); return; }
+          S.close();
+          proc('Проводим платёж', 1100).then(() => {
+            state.acc.bal = Math.round((state.acc.bal - v) * 100) / 100;
+            const tx = { t: nm, s: 'Оплата по реквизитам · счёт ' + acc.slice(0, 5) + '…', c: 'req', a: -v, d: Date.now(), fresh: 1 };
+            state.txs.unshift(tx);
+            save(); renderHome(); renderAcc(); renderHist(); renderPayRecent();
+            showOk({ title: 'Оплатили', sum: v, who: nm, note: 'Платёж по реквизитам · без комиссии', tx });
+          });
+        });
+      }
+    });
+  }
+  function autoSheet() {
+    const rows = [['zhkh', 'ЖКУ «Домовой»', '≈ 4 300 ₽ в месяц'], ['mobile', 'Связь «Телла»', '450 ₽ в месяц'], ['sub', 'Подписки', 'по тарифу подписки']];
+    sheet({
+      html: `<div class="sheet__t">Автоплатежи</div><div class="sheet__s">Спишем сами, когда придёт счёт</div>
+        <div class="sheet__body">${rows.map(r => `<div class="srow2"><span>${r[1]}<br><small style="color:var(--txt3)">${r[2]}</small></span><label class="sw"><input type="checkbox" data-au="${r[0]}" ${state.auto[r[0]] ? 'checked' : ''}><i></i></label></div>`).join('')}</div>`,
+      onMount(S) {
+        $$('[data-au]', S.panel).forEach(sw => sw.addEventListener('change', () => {
+          state.auto[sw.dataset.au] = sw.checked; save(); haptic(12);
+          const r = rows.find(x => x[0] === sw.dataset.au);
+          toast((sw.checked ? 'Автоплатёж включён: ' : 'Автоплатёж выключен: ') + r[1]);
+        }));
+      }
+    });
+  }
+  function tplSheet() {
+    const rec = state.txs.filter(t => t.c === 'p2p').slice(0, 4);
+    sheet({
+      html: `<div class="sheet__t">Шаблоны</div><div class="sheet__s">Повтор перевода в один тап</div>
+        <div class="sheet__body">${state.contacts.length || rec.length ? '' : '<div class="empty"><span>Шаблонов пока нет: сделайте перевод — он появится здесь</span></div>'}
+        <div class="slist">${state.contacts.map((c, i) => `<button class="srow" data-tpl="${i}" type="button"><span>${esc(c.name)}</span><em>${esc(c.phone)}</em><u class="arr"></u></button>`).join('')}</div>
+        ${rec.length ? `<div class="sect"><div class="sect__t">Недавние переводы</div></div><div class="slist">${rec.map((t, i) => `<button class="srow" data-rtpl="${i}" type="button"><span>${esc(t.t)}</span><em>${esc((t.meta || {}).phone || '')}</em><u class="arr"></u></button>`).join('')}</div>` : ''}</div>`,
+      onMount(S) {
+        $$('[data-tpl]', S.panel).forEach(b => b.addEventListener('click', () => { const c = state.contacts[+b.dataset.tpl]; S.close(); openTransfer({ phone: c.phone, name: c.name }); }));
+        $$('[data-rtpl]', S.panel).forEach(b => b.addEventListener('click', () => { const t = rec[+b.dataset.rtpl]; S.close(); openTransfer({ phone: (t.meta || {}).phone, name: t.t }); }));
+      }
+    });
+  }
+  function bonusSheet() {
+    const rows = state.txs.filter(t => t.c === 'p2p' || t.c === 'topup').slice(0, 4);
+    sheet({
+      html: `<div class="sheet__t">ChСпасибо</div><div class="sheet__s">${state.bonus.toLocaleString('ru-RU')} бонусов · 1 бонус = 1 ₽</div>
+        <div class="sheet__body"><div class="dets">
+          <div class="det"><span>Кэшбэк с переводов</span><b>2%</b></div>
+          <div class="det"><span>С пополнений</span><b>1%</b></div>
+          <div class="det"><span>Категория месяца</span><b>Кафе · 5%</b></div>
+          ${rows.map(t => `<div class="det"><span>${esc(t.t)}</span><b>+${Math.max(1, Math.round(Math.abs(t.a) * (t.c === 'topup' ? 0.01 : 0.02)))}</b></div>`).join('')}
+        </div></div>
+        <div class="sheet__foot"><button class="gbtn" id="bnGo" type="button">Обменять бонусы на рубли</button></div>`,
+      onMount(S) {
+        $('#bnGo', S.panel).addEventListener('click', () => {
+          if (!state.bonus) { toast('Бонусов пока нет', 'err'); return; }
+          const v = state.bonus; state.bonus = 0;
+          state.acc.bal = Math.round((state.acc.bal + v) * 100) / 100;
+          state.txs.unshift({ t: 'Обмен бонусов', s: v.toLocaleString('ru-RU') + ' бонусов → рубли', c: 'bonus', a: v, d: Date.now(), fresh: 1 });
+          save(); renderHome(); renderAcc(); renderHist(); S.close();
+          toast('+' + rub(v) + ' бонусами на счёт');
+        });
+      }
+    });
+  }
+  function secSheet() {
+    sheet({
+      html: `<div class="sheet__t">Безопасность</div><div class="sheet__s">Всё под контролем</div>
+        <div class="sheet__body">
+          <div class="srow2"><span>Вход по Face ID</span><label class="sw"><input type="checkbox" id="secFace" ${state.face ? 'checked' : ''}><i></i></label></div>
+          <button class="srow2" id="secPin" type="button"><span>Сменить код-пароль</span><u class="arr"></u></button>
+          <div class="srow2"><span>Скрыть баланс</span><label class="sw"><input type="checkbox" id="secHide" ${state.hidden ? 'checked' : ''}><i></i></label></div>
+          <div class="dets" style="margin-top:12px">
+            <div class="det"><span>Устройство</span><b>Этот телефон</b></div>
+            <div class="det"><span>Шифрование</span><b>локальное · AES-256</b></div>
+          </div>
+        </div>`,
+      onMount(S) {
+        $('#secFace', S.panel).addEventListener('change', e => { state.face = e.target.checked; save(); haptic(12); toast(e.target.checked ? 'Face ID включён' : 'Face ID выключен'); });
+        $('#secHide', S.panel).addEventListener('change', e => { state.hidden = e.target.checked; save(); renderHome(); renderAcc(); applyEye(); });
+        $('#secPin', S.panel).addEventListener('click', () => { S.close(); pinChangeSheet(); });
+      }
+    });
+  }
+  function pinChangeSheet() {
+    let np = '';
+    sheet({
+      html: `<div class="sheet__t">Новый код-пароль</div><div class="sheet__s">4 цифры для входа</div>
+        <div class="sheet__body">
+          <div class="codewrap"><div class="code" id="pcBox"><i></i><i></i><i></i><i></i></div><input id="pcInp" class="code__inp" inputmode="numeric" maxlength="4" autocomplete="off"></div>
+          <div class="reg__hint">Нажмите на квадраты — откроется клавиатура</div>
+        </div>
+        <div class="sheet__foot"><button class="gbtn" id="pcGo" type="button" disabled>Сохранить</button></div>`,
+      onMount(S) {
+        const inp = $('#pcInp', S.panel), boxes = $$('#pcBox i', S.panel), btn = $('#pcGo', S.panel);
+        $('.codewrap', S.panel).addEventListener('pointerup', () => { try { inp.focus(); } catch (e) {} });
+        const paint = () => { const v = inp.value; boxes.forEach((x, i) => { x.textContent = '•'; x.style.color = v[i] ? '#fff' : 'transparent'; x.classList.toggle('is-on', !!v[i]); }); btn.disabled = v.length !== 4; };
+        inp.addEventListener('input', () => { inp.value = num(inp.value).slice(0, 4); np = inp.value; paint(); haptic(7); });
+        paint();
+        btn.addEventListener('click', () => { state.user.pin = np; save(); S.close(); toast('Код-пароль обновлён'); });
+      }
+    });
+  }
+  function scoreSheet() {
+    sheet({
+      html: `<div class="sheet__t">Кредитная история</div><div class="sheet__s">Скоринг 780 из 850 · отлично</div>
+        <div class="sheet__body">
+          <div class="goal"><div class="goal__t"><span>Ваш рейтинг</span><em>780</em></div><div class="goal__bar"><b style="width:92%"></b></div><div class="goal__s">Выше, чем у 87% клиентов</div></div>
+          <div class="dets" style="margin-top:12px">
+            <div class="det"><span>Просрочки</span><b style="color:#4CD97B">нет</b></div>
+            <div class="det"><span>Открытых кредитов</span><b>${state.loans.length}</b></div>
+            <div class="det"><span>Долговая нагрузка</span><b>0% · платить не нужно</b></div>
+          </div>
+        </div>
+        <div class="sheet__foot"><button class="gbtn" id="scGo" type="button">Взять ещё кредит</button></div>`,
+      onMount(S) { $('#scGo', S.panel).addEventListener('click', () => { S.close(); setTimeout(() => $('#crBtn').click(), 350); }); }
+    });
+  }
+  function insSheet() {
+    sheet({
+      html: `<div class="sheet__t">Страховка счёта</div><div class="sheet__s">99 ₽/мес · защита до 100 000 ₽</div>
+        <div class="sheet__body"><div class="dets">
+          <div class="det"><span>Покрывает</span><b>мошенники, кража карты</b></div>
+          <div class="det"><span>Выплата</span><b>за 1 день</b></div>
+          <div class="det"><span>Сейчас</span><b>${state.insured ? 'подключена' : 'не подключена'}</b></div>
+        </div></div>
+        <div class="sheet__foot"><button class="gbtn" id="inGo" type="button">${state.insured ? 'Отключить' : 'Подключить за 99 ₽'}</button></div>`,
+      onMount(S) {
+        $('#inGo', S.panel).addEventListener('click', () => {
+          state.insured = !state.insured; haptic(12);
+          if (state.insured) {
+            state.acc.bal = Math.round((state.acc.bal - 99) * 100) / 100;
+            state.txs.unshift({ t: 'Страховка счёта', s: 'Первый месяц защиты', c: 'sub', a: -99, d: Date.now(), fresh: 1 });
+          }
+          save(); renderHome(); renderAcc(); renderHist(); renderCredit(); S.close();
+          toast(state.insured ? 'Страховка подключена 🛡' : 'Страховка отключена');
+        });
+      }
+    });
+  }
+  function cardOrderSheet() {
+    if (state.cardOrder) {
+      const days = Math.max(1, Math.ceil((state.cardOrder - Date.now()) / 864e5));
+      sheet({
+        html: `<div class="sheet__t">Карта в пути</div><div class="sheet__s">Курьер приедет через ${days} дн.</div>
+          <div class="sheet__body"><div class="dets">
+            <div class="det"><span>Заявка</span><b>одобрена ✓</b></div>
+            <div class="det"><span>Печать</span><b>завершена ✓</b></div>
+            <div class="det"><span>Доставка</span><b>курьером · бесплатно</b></div>
+          </div></div>`
+      });
+      return;
+    }
+    const faces = ['Классика', 'Чёрный глянец', 'Жёлтый неон'];
+    sheet({
+      html: `<div class="sheet__t">Заказать карту</div><div class="sheet__s">Выберите дизайн — привезём за 3 дня</div>
+        <div class="sheet__body">
+          <div class="chipsrow">${faces.map((f, i) => `<button class="chip${i === 0 ? ' is-on' : ''}" data-f="${i}" type="button">${f}</button>`).join('')}</div>
+          <div class="fcard"><label>Имя на карте</label><input id="coName" type="text" value="${esc((state.user ? state.user.name : '').toUpperCase())}" autocomplete="off"></div>
+        </div>
+        <div class="sheet__foot"><button class="gbtn" id="coGo" type="button">Заказать бесплатно</button></div>`,
+      onMount(S) {
+        $$('.chip', S.panel).forEach(c => c.addEventListener('click', () => { $$('.chip', S.panel).forEach(x => x.classList.toggle('is-on', x === c)); haptic(10); }));
+        $('#coGo', S.panel).addEventListener('click', () => {
+          S.close();
+          proc('Оформляем карту', 1100).then(() => {
+            state.cardOrder = Date.now() + 3 * 864e5; save(); renderCredit();
+            toast('Карта заказана: курьер приедет через 3 дня');
+          });
+        });
+      }
+    });
+  }
 
   /* ───────── жизнь / платежи / кредиты ───────── */
   function renderLife() {
     $('#lifeTiles').innerHTML = SERVICES.slice(0, 8).map((s, i) => `<button class="tile" data-s="${i}" type="button"><i>${s.i}</i><span>${esc(s.t)}</span></button>`).join('');
     $$('#lifeTiles .tile').forEach(b => b.addEventListener('click', () => { haptic(12); paySheet(SERVICES[+b.dataset.s]); }));
-    $('#subsList').innerHTML = [
-      { t: 'Музыка+', p: 299, c: 'l-pk' }, { t: 'Кино онлайн', p: 399, c: 'l-p' }, { t: 'Облако 100 ГБ', p: 149, c: 'l-b' }
-    ].map((s, i) => `<div class="lrow"><i class="lico ${s.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 9.7l5.4-.8L12 4Z"/></svg></i><span>${esc(s.t)} · ${s.p} ₽/мес</span><button class="dbtn dbtn--sm" data-sub="${i}">Отключить</button></div>`).join('');
-    $$('[data-sub]').forEach(b => b.addEventListener('click', () => { haptic(10); toast('Демо: подписка осталась активной'); }));
+    $('#subsList').innerHTML = baseSubs().map((s, i) => {
+      const off = state.subsOff.includes(s.t);
+      return `<div class="lrow"><i class="lico ${s.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 9.7l5.4-.8L12 4Z"/></svg></i><span>${esc(s.t)} · ${s.p} ₽/мес${off ? ' · отключена' : ''}</span><button class="dbtn dbtn--sm" data-sub="${i}" type="button">${off ? 'Подключить' : 'Отключить'}</button></div>`;
+    }).join('');
+    $$('[data-sub]').forEach(b => b.addEventListener('click', () => {
+      const s = baseSubs()[+b.dataset.sub], off = state.subsOff.includes(s.t);
+      if (off) {
+        state.subsOff = state.subsOff.filter(x => x !== s.t);
+        state.acc.bal = Math.round((state.acc.bal - s.p) * 100) / 100;
+        state.txs.unshift({ t: s.t, s: 'Оплата подписки', c: 'sub', a: -s.p, d: Date.now(), fresh: 1 });
+        toast('Подписка «' + s.t + '» снова активна');
+      } else {
+        state.subsOff.push(s.t);
+        state.acc.bal = Math.round((state.acc.bal + s.p) * 100) / 100;
+        state.txs.unshift({ t: s.t, s: 'Возврат за отключённую подписку', c: 'sub', a: s.p, d: Date.now(), fresh: 1 });
+        toast('Подписка «' + s.t + '» отключена, ' + rub(s.p) + ' вернулись на счёт');
+      }
+      haptic(12); save(); renderLife(); renderHome(); renderAcc(); renderHist();
+    }));
     $('#payTiles').innerHTML = SERVICES.slice(0, 8).map((s, i) => `<button class="tile" data-s="${i}" type="button"><i>${s.i}</i><span>${esc(s.t)}</span></button>`).join('');
     $$('#payTiles .tile').forEach(b => b.addEventListener('click', () => { haptic(12); paySheet(SERVICES[+b.dataset.s]); }));
   }
@@ -877,8 +1207,19 @@
     const k = b.dataset.pay;
     if (k === 'phone') openTransfer();
     else if (k === 'own') ownSheet();
-    else toast('Демо: раздел «' + b.querySelector('span').textContent + '»');
+    else if (k === 'req') reqSheet();
+    else if (k === 'auto') autoSheet();
+    else if (k === 'tpl') tplSheet();
   }));
+  function issueLoan(v) {
+    state.acc.bal = Math.round((state.acc.bal + v) * 100) / 100;
+    state.loans.unshift({ v, d: Date.now() });
+    const tx = { t: 'Кредит «Безвозвратный»', s: 'Зачисление на счёт •• ' + state.acc.last4 + ' · ставка 0%', c: 'loan', a: v, d: Date.now(), fresh: 1 };
+    state.txs.unshift(tx);
+    save(); renderHome(); renderAcc(); renderHist(); renderCredit();
+    const wb = $('.wallet__bal'); if (wb) { wb.classList.remove('is-hit'); void wb.offsetWidth; wb.classList.add('is-hit'); }
+    showOk({ title: 'Кредит выдан', sum: v, who: 'Счёт •• ' + state.acc.last4, note: 'Ставка 0% · платёж 0 ₽/мес · погашать не требуется', tx });
+  }
   $('#crBtn').addEventListener('click', () => {
     const cond = [['Ставка', '0,0% годовых'], ['Ежемесячный платёж', '0 ₽'], ['Срок', '∞ навсегда'], ['Переплата', '0 ₽'], ['Кредитная история', 'не смотрим'], ['Одобрение', '100% · всем']];
     sheet({
@@ -901,15 +1242,7 @@
           if (!v) { toast('Укажите сумму кредита', 'err'); haptic([16, 40, 16]); return; }
           if (v > 5000000) { toast('Максимум 5 000 000 ₽ — даже безвозвратно', 'err', 3200); haptic([16, 40, 16]); return; }
           S.close();
-          proc('Одобряем без проверки', 1300).then(() => {
-            state.acc.bal = Math.round((state.acc.bal + v) * 100) / 100;
-            state.loans.unshift({ v, d: Date.now() });
-            const tx = { t: 'Кредит «Безвозвратный»', s: 'Зачисление на счёт •• ' + state.acc.last4 + ' · ставка 0%', c: 'loan', a: v, d: Date.now(), fresh: 1 };
-            state.txs.unshift(tx);
-            save(); renderHome(); renderAcc(); renderHist(); renderCredit();
-            const wb = $('.wallet__bal'); if (wb) { wb.classList.remove('is-hit'); void wb.offsetWidth; wb.classList.add('is-hit'); }
-            showOk({ title: 'Кредит выдан', sum: v, who: 'Счёт •• ' + state.acc.last4, note: 'Ставка 0% · платёж 0 ₽/мес · погашать не требуется', tx });
-          });
+          proc('Одобряем без проверки', 1300).then(() => issueLoan(v));
         });
         upd();
       }
@@ -917,6 +1250,8 @@
   });
   function renderCredit() {
     const box = $('#crList'), empty = $('#crEmpty');
+    const cc = $('#crCard'); if (cc) cc.textContent = state.cardOrder ? 'Карта в пути' : 'Заказать карту';
+    const ci = $('#crIns span'); if (ci) ci.textContent = 'Страхование от потери работы' + (state.insured ? ' · подключено' : '');
     if (!box) return;
     if (!state.loans.length) { box.innerHTML = ''; if (empty) empty.style.display = ''; return; }
     if (empty) empty.style.display = 'none';
@@ -935,7 +1270,7 @@
       </div>`).join('') + `<div class="loantotal">Общий долг: <b>${rub(tot)}</b> · Платить: <b>0 ₽</b></div>`;
     $$('.loancard__pay', box).forEach(b => b.addEventListener('click', () => { haptic(12); toast('Банк отказался брать деньги. Платить не нужно 🙂', 'ok', 3000); }));
   }
-  $('#crCard').addEventListener('click', () => toast('Заявка на карту принята (демо)'));
+  $('#crCard').addEventListener('click', () => cardOrderSheet());
 
   /* ───────── чат ───────── */
   const QUICK = ['Мой баланс', 'Как перевести деньги?', 'Бонусы', 'Где история?'];
@@ -1061,7 +1396,7 @@
         $('#swHide', S.panel).addEventListener('change', e => { state.hidden = e.target.checked; save(); renderHome(); renderAcc(); applyEye(); haptic(12); });
         $('#swHap', S.panel).addEventListener('change', e => { state.haptics = e.target.checked; save(); haptic(20); });
         $('#swNot', S.panel).addEventListener('change', e => { state.notif = e.target.checked; save(); });
-        $('#stSec', S.panel).addEventListener('click', () => toast('Демо: безопасность на максимуме 🛡'));
+        $('#stSec', S.panel).addEventListener('click', () => { S.close(); secSheet(); });
         $('#stTar', S.panel).addEventListener('click', () => { S.close(); tariffSheet(); });
       }
     });
@@ -1132,7 +1467,7 @@
   /* ───────── кнопки главной ───────── */
   $('#btnWallet').addEventListener('click', () => { renderAcc(); openPush('#pushAcc'); });
   $('#tileCard').addEventListener('click', () => { renderAcc(); openPush('#pushAcc'); });
-  $('#tileBonus').addEventListener('click', () => toast('Бонусов ChСпасибо: ' + state.bonus.toLocaleString('ru-RU')));
+  $('#tileBonus').addEventListener('click', () => bonusSheet());
   $('#btnQr').addEventListener('click', () => { haptic(12); qrSheet(); });
   $('#btnShield').addEventListener('click', () => toast('Защита счёта включена 🛡'));
   $('#btnEye').addEventListener('click', () => { state.hidden = !state.hidden; save(); applyEye(); renderHome(false); renderAcc(); haptic(14); toast(state.hidden ? 'Баланс скрыт' : 'Баланс виден'); });
@@ -1161,17 +1496,20 @@
   /* ───────── реклама и доп. контент ───────── */
   const ADS = {
     homeAds: [
-      { id: 'cafe5', i: '☕️', g: 'g1', t: 'Кэшбэк 5% в кафе', s: 'Весь месяц по карте ChБанка в кофейнях и ресторанах', btn: 'Активировать', act: () => toast('Кэшбэк 5% в кафе активирован ✨') },
-      { id: 'protect', i: '🛡️', g: 'g2', t: 'Защита средств', s: 'Бесплатная страховка счёта до 100 000 ₽', btn: 'Включить', act: () => toast('Демо: страховка подключена') }
+      { id: 'cafe5', i: '☕️', g: 'g1', t: 'Кэшбэк 5% в кафе', s: 'Весь месяц по карте ChБанка в кофейнях и ресторанах', btn: 'Активировать', act: () => { state.cafe5 = true; state.bonus += 50; save(); renderHome(); renderAds('homeAds'); toast('Кэшбэк 5% в кафе активирован, +50 бонусов'); } },
+      { id: 'protect', i: '🛡️', g: 'g2', t: 'Защита средств', s: 'Бесплатная страховка счёта до 100 000 ₽', btn: 'Включить', act: () => { state.protect = !state.protect; save(); renderAds('homeAds'); toast(state.protect ? 'Страховка счёта включена 🛡' : 'Страховка счёта выключена'); } }
     ],
     savAds: [{ id: 'dream', i: '💎', g: 'g3', t: 'Вклад «Мечта»', s: '14% годовых при открытии до конца месяца', btn: 'Открыть', act: () => openTopup('sav') }],
-    lifeAds: [{ id: 'chplay', i: '🎬', g: 'g2', t: 'Подписка ChPlay', s: 'Кино, сериалы и музыка — первый месяц 1 ₽', btn: 'Подключить', act: () => toast('Демо: подписка подключена') }],
-    payAds: [{ id: 'autozhkh', i: '⚡️', g: 'g1', t: 'Автоплатёж за ЖКХ', s: 'Счета будут оплачены вовремя и без просрочек', btn: 'Настроить', act: () => toast('Демо: автоплатёж настроен') }],
-    crAds: [{ id: 'preod', i: '⚡️', g: 'g3', t: 'Одобрено заранее: 500 000 ₽', s: 'От 4,9% годовых, без справок о доходе', btn: 'Получить', act: () => toast('Демо: кредит одобрен') }]
+    lifeAds: [{ id: 'chplay', i: '🎬', g: 'g2', t: 'Подписка ChPlay', s: 'Кино, сериалы и музыка — первый месяц 1 ₽', btn: 'Подключить', act: () => { state.chplay = true; save(); renderLife(); renderAds('lifeAds'); toast('ChPlay подключена: первый месяц 1 ₽'); } }],
+    payAds: [{ id: 'autozhkh', i: '⚡️', g: 'g1', t: 'Автоплатёж за ЖКХ', s: 'Счета будут оплачены вовремя и без просрочек', btn: 'Настроить', act: () => { state.auto.zhkh = true; save(); renderAds('payAds'); toast('Автоплатёж ЖКХ настроен: оплатим при выставлении счёта'); } }],
+    crAds: [{ id: 'preod', i: '⚡️', g: 'g3', t: 'Одобрено заранее: 500 000 ₽', s: 'Безвозвратно: 0% годовых, платить не нужно', btn: 'Получить', act: () => issueLoan(500000) }]
   };
   function renderAds(slot) {
     const box = $('#' + slot); if (!box) return;
-    const list = (ADS[slot] || []).filter(a => !state.adsGone.includes(a.id));
+    const list = (ADS[slot] || []).filter(a => !state.adsGone.includes(a.id)).map(a => {
+      const lb = { protect: state.protect ? 'Подключено ✓' : a.btn, chplay: state.chplay ? 'Подключено ✓' : a.btn, autozhkh: state.auto.zhkh ? 'Настроено ✓' : a.btn, cafe5: state.cafe5 ? 'Активировано ✓' : a.btn }[a.id];
+      return lb ? Object.assign({}, a, { btn: lb }) : a;
+    });
     box.innerHTML = list.map(a => `
       <div class="adcard adcard--${a.g}" data-ad="${a.id}">
         <button class="adcard__x" data-x="${a.id}" type="button" aria-label="Скрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -1205,8 +1543,8 @@
   let crBound = false;
   function bindCredit() {
     if (crBound) return; crBound = true;
-    $('#crHist').addEventListener('click', () => toast('Кредитная история: отличная, скор 780'));
-    $('#crIns').addEventListener('click', () => toast('Демо: страхование доступно в приложении'));
+    $('#crHist').addEventListener('click', () => scoreSheet());
+    $('#crIns').addEventListener('click', () => insSheet());
   }
 
   /* ───────── ripple ───────── */
