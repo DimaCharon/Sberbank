@@ -248,8 +248,11 @@
     if (regStep === 1) {
       b.innerHTML = `<div class="reg__t">Код из СМС</div>
         <div class="reg__s">Отправили код на ${esc(reg.phone)}. В демо подойдёт любые 4 цифры</div>
-        <div class="code" id="rCodeBox"><i></i><i></i><i></i><i></i></div>
-        <input id="rCode" inputmode="numeric" maxlength="4" style="position:absolute;opacity:0;width:1px;height:1px" autocomplete="off">
+        <div class="codewrap">
+          <div class="code" id="rCodeBox"><i></i><i></i><i></i><i></i></div>
+          <input id="rCode" class="code__inp" inputmode="numeric" maxlength="4" autocomplete="off">
+        </div>
+        <div class="reg__hint">Нажмите на квадраты — откроется клавиатура</div>
         <button class="reg__again" id="rAgain">Отправить код снова</button>
         <div class="reg__fields"><button class="gbtn reg__btn" id="rNext" disabled>Подтвердить</button></div>`;
       const inp = $('#rCode', b), boxes = $$('#rCodeBox i', b), btn = $('#rNext', b);
@@ -287,8 +290,11 @@
       const conf = regStep === 4;
       b.innerHTML = `<div class="reg__t">${conf ? 'Повторите код' : 'Придумайте код-пароль'}</div>
         <div class="reg__s">${conf ? 'Ещё раз, чтобы не ошибиться' : '4 цифры для входа в приложение'}</div>
-        <div class="code" id="rCodeBox"><i></i><i></i><i></i><i></i></div>
-        <input id="rCode" inputmode="numeric" maxlength="4" style="position:absolute;opacity:0;width:1px;height:1px" autocomplete="off">
+        <div class="codewrap">
+          <div class="code" id="rCodeBox"><i></i><i></i><i></i><i></i></div>
+          <input id="rCode" class="code__inp" inputmode="numeric" maxlength="4" autocomplete="off">
+        </div>
+        <div class="reg__hint">Нажмите на квадраты — откроется клавиатура</div>
         <div class="reg__fields"><button class="gbtn reg__btn" id="rNext" disabled>${conf ? 'Завершить' : 'Продолжить'}</button></div>`;
       const inp = $('#rCode', b), boxes = $$('#rCodeBox i', b), btn = $('#rNext', b);
       setTimeout(() => inp.focus(), 350);
@@ -461,6 +467,7 @@
         <button class="pplitem" data-a="auto" type="button"><span class="pplitem__a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></svg></span><span class="pplitem__n">Автопереводы</span></button>
       </div>
       <div class="sheet__body" style="margin-top:8px">
+        <button class="srow" data-a="contacts" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.2" cy="8.4" r="3.4"/><path d="M3.2 19.4a6.2 6.2 0 0 1 12 0"/><path d="M16.5 8.5h5M19 6v5"/></svg>Мои контакты</button>
         <button class="srow" data-a="own" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v13M8 4 5 7M8 4l3 3M16 20V7M16 20l3-3M16 20l-3-3"/></svg>Между своими счетами</button>
         <button class="srow" data-a="world" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4c2.4 2.3 3.6 5.2 3.6 8.6s-1.2 6.3-3.6 8.6c-2.4-2.3-3.6-5.2-3.6-8.6s1.2-6.3 3.6-8.6Z"/></svg>В другую страну</button>
         <button class="glink" data-a="pay" type="button">Перейти в платежи</button>
@@ -474,11 +481,49 @@
       if (b.dataset.c !== undefined) { const c = state.contacts[+b.dataset.c]; S.close(); openTransfer({ phone: c.phone, name: c.name }); return; }
       const a = b.dataset.a;
       if (a === 'new') { S.close(); openTransfer(); }
+      if (a === 'contacts') { S.close(); contactsSheet(); }
       if (a === 'own') { S.close(); ownSheet(); }
       if (a === 'world') toast('Демо: переводы за рубеж недоступны');
       if (a === 'pay') { S.close(); go('pay'); }
       if (a === 'tpl' || a === 'auto') toast('Демо: раздел появится позже');
     });
+  }
+
+  /* ───────── мои контакты ───────── */
+  function contactsSheet() {
+    const S = sheet({ html: '' });
+    function draw() {
+      S.render(`<div class="sheet__t">Контакты</div>
+        <div class="sheet__s">${state.contacts.length ? 'Быстрые переводы без ввода номера' : 'Пока пусто — добавьте первый контакт'}</div>
+        <div class="sheet__body"><div class="slist">${state.contacts.map((c, i) => `
+          <div class="srow2">
+            <span class="op__i" style="width:38px;height:38px;background:var(--green);font-size:13px">${esc(initials(c.name))}</span>
+            <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0"><b style="font-size:15px;letter-spacing:-.2px">${esc(c.name)}</b><em style="font-style:normal;font-size:12.5px;color:var(--txt2)">${esc(c.phone)}</em></span>
+            <button class="dbtn dbtn--sm" data-tr="${i}" type="button">Перевести</button>
+            <button class="cx" data-del="${i}" type="button" aria-label="Удалить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>`).join('')}</div></div>
+        <div class="sheet__foot"><button class="gbtn" id="cAdd" type="button">Добавить контакт</button></div>`);
+      const p = S.panel;
+      $$('[data-tr]', p).forEach(b => b.addEventListener('click', () => { const c = state.contacts[+b.dataset.tr]; S.close(); openTransfer({ phone: c.phone, name: c.name }); }));
+      $$('[data-del]', p).forEach(b => b.addEventListener('click', () => { state.contacts.splice(+b.dataset.del, 1); save(); haptic(10); draw(); toast('Контакт удалён'); }));
+      $('#cAdd', p).addEventListener('click', () => {
+        const S2 = sheet({ html: `<div class="sheet__t">Новый контакт</div>
+          <div class="sheet__body">
+            <div class="inp"><label>Имя и фамилия</label><input id="cName" type="text" placeholder="Ольга К." autocomplete="off"></div>
+            <div class="inp" style="margin-top:10px"><label>Телефон</label><input id="cPhone" type="tel" inputmode="tel" placeholder="+7 (___) ___-__-__" autocomplete="off"></div>
+          </div>
+          <div class="sheet__foot"><button class="gbtn" id="cGo" type="button">Сохранить</button></div>` });
+        const ph = $('#cPhone', S2.panel);
+        ph.addEventListener('input', () => { const c = ph.selectionStart, l = ph.value.length; ph.value = fmtPhone(ph.value); const d = ph.value.length - l; ph.setSelectionRange(c + d, c + d); });
+        $('#cGo', S2.panel).addEventListener('click', () => {
+          const n = $('#cName', S2.panel).value.trim(), v = ph.value;
+          if (!n || num(v).length !== 11) { haptic([16, 40, 16]); toast('Заполните имя и телефон', 'err'); return; }
+          state.contacts = [{ name: n, phone: v }].concat(state.contacts.filter(c => c.phone !== v)).slice(0, 12);
+          save(); haptic(12); S2.close(); draw(); toast('Контакт сохранён');
+        });
+      });
+    }
+    draw();
   }
 
   /* ───────── между своими ───────── */
@@ -525,17 +570,18 @@
 
   /* ───────── новый перевод ───────── */
   const BANKS = [
-    { id: 'ch', n: 'ChБанк', c: '#21A038', l: 'C', sbp: 1 },
-    { id: 'vega', n: 'Вега Банк', c: '#2E6FF2', l: 'В', sbp: 1 },
+    { id: 'sber', n: 'СберБанк', c: '#21A038', l: 'S', sbp: 1 },
+    { id: 'tbank', n: 'Т-Банк', c: '#FFDD2D', tc: '#333', l: 'T', sbp: 1 },
+    { id: 'ozon', n: 'Ozon Банк', c: '#005BFF', l: 'ozon', fs: 9, sbp: 1 },
     { id: 'other', n: 'Другой банк', c: '#565B58', ico: 'bank' },
     { id: 'world', n: 'Другая страна', c: '#565B58', ico: 'globe' }
   ];
-  let trBank = 'ch';
+  let trBank = 'sber';
   function renderBanks(who) {
     $('#trBanks').innerHTML = BANKS.map(b => `
       <button class="bank ${b.id === trBank ? 'is-on' : ''}" data-b="${b.id}" type="button">
         <span class="bank__lg">
-          <span class="bank__c" style="background:${b.c}">${b.ico === 'bank' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5 12 5l8 4.5M5.5 10v7M9.8 10v7M14.2 10v7M18.5 10v7M4 18.5h16"/></svg>' : b.ico === 'globe' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4c2.4 2.3 3.6 5.2 3.6 8.6s-1.2 6.3-3.6 8.6c-2.4-2.3-3.6-5.2-3.6-8.6s1.2-6.3 3.6-8.6Z"/></svg>' : esc(b.l)}</span>
+          <span class="bank__c" style="background:${b.c};${b.tc ? 'color:' + b.tc + ';' : ''}${b.fs ? 'font-size:' + b.fs + 'px;letter-spacing:-.3px;' : ''}">${b.ico === 'bank' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5 12 5l8 4.5M5.5 10v7M9.8 10v7M14.2 10v7M18.5 10v7M4 18.5h16"/></svg>' : b.ico === 'globe' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4c2.4 2.3 3.6 5.2 3.6 8.6s-1.2 6.3-3.6 8.6c-2.4-2.3-3.6-5.2-3.6-8.6s1.2-6.3 3.6-8.6Z"/></svg>' : esc(b.l)}</span>
           ${b.sbp ? '<span class="bank__c"><i class="sbpmark" data-sbp style="width:22px;height:22px"></i></span>' : ''}
         </span>
         <span class="bank__n">${esc(b.n)}</span>
@@ -562,7 +608,12 @@
     };
     refreshAva();
     const updBtn = () => { const v = parseSum(isum.value); $('#trGo').textContent = 'Перевести ' + (v ? rub(v) : '0 ₽'); };
-    ip.oninput = () => { const c = ip.selectionStart, l = ip.value.length; ip.value = fmtPhone(ip.value); const d = ip.value.length - l; ip.setSelectionRange(c + d, c + d); if (num(ip.value).length === 11 && !inm.dataset.touched) { inm.value = nameFor(ip.value) || ''; refreshAva(); } };
+    ip.oninput = () => { const c = ip.selectionStart, l = ip.value.length; ip.value = fmtPhone(ip.value); const d = ip.value.length - l; ip.setSelectionRange(c + d, c + d);
+      if (num(ip.value).length === 11 && !inm.dataset.touched) {
+        const savedC = state.contacts.find(cc => num(cc.phone) === num(ip.value));
+        inm.value = (savedC ? savedC.name : nameFor(ip.value)) || '';
+        refreshAva();
+      } };
     inm.oninput = () => { inm.dataset.touched = '1'; refreshAva(); };
     isum.oninput = () => { const c = isum.selectionStart, l = isum.value.length; isum.value = fmtInputSum(isum.value) ? fmtInputSum(isum.value) + NB + '₽' : ''; const d = isum.value.length - l; isum.setSelectionRange(c + d, c + d); $$('#trChips .chip').forEach(x => x.classList.toggle('is-on', num(x.dataset.v) === num(isum.value))); updBtn(); };
     $$('#trChips .chip').forEach(c => c.onclick = () => { isum.value = fmtInputSum(c.dataset.v) + NB + '₽'; $$('#trChips .chip').forEach(x => x.classList.toggle('is-on', x === c)); haptic(12); updBtn(); });
@@ -602,7 +653,8 @@
         else state.sav.bal = Math.round((state.sav.bal - v) * 100) / 100;
         const tx = { t: name, s: 'Перевод в ' + bank.n + ' через СБП · ' + phone, c: 'p2p', a: -v, d: Date.now(), fresh: 1, msg: $('#trMsg').value, meta: { phone, name, bank: bank.n } };
         state.txs.unshift(tx);
-        state.contacts = [{ name, phone }].concat(state.contacts.filter(c => c.phone !== phone)).slice(0, 6);
+        if (!$('#trSaveC') || $('#trSaveC').checked)
+          state.contacts = [{ name, phone }].concat(state.contacts.filter(c => c.phone !== phone)).slice(0, 12);
         state.bonus += Math.max(1, Math.round(v * 0.02));
         save(); renderHome(); renderAcc(); renderHist(); renderPayRecent();
         showOk({
