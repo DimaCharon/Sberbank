@@ -58,7 +58,8 @@
     gov: { c: '#64748B', sub: 'Госуслуги' }, salary: { c: '#21A038', sub: 'Поступления', ico: 'in' },
     p2p: { c: '#21A038', sub: 'Переводы', ico: 'out' }, p2pin: { c: '#21A038', sub: 'Переводы', ico: 'in' },
     topup: { c: '#21A038', sub: 'Пополнение', ico: 'plus' }, self: { c: '#2E6FF2', sub: 'Между своими', ico: 'swap' },
-    bonus: { c: '#21A038', sub: 'Бонусы', ico: 'star' }
+    bonus: { c: '#21A038', sub: 'Бонусы', ico: 'star' },
+    loan: { c: '#21A038', sub: 'Кредиты', ico: 'in' }
   };
   const ICO = {
     in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13M12 18l-5-5M12 18l5-5"/></svg>',
@@ -91,6 +92,7 @@
     adsGone: [],
     txs: [],
     contacts: [],
+    loans: [],
     goals: [
       { t: 'Отпуск у моря', sum: 120000, have: 46500 },
       { t: 'Новый ноутбук', sum: 90000, have: 71200 }
@@ -256,7 +258,7 @@
         <button class="reg__again" id="rAgain">Отправить код снова</button>
         <div class="reg__fields"><button class="gbtn reg__btn" id="rNext" disabled>Подтвердить</button></div>`;
       const inp = $('#rCode', b), boxes = $$('#rCodeBox i', b), btn = $('#rNext', b);
-      setTimeout(() => inp.focus(), 350);
+      $('.codewrap', b).addEventListener('pointerup', () => { try { inp.focus(); } catch (e) {} });
       const paint = () => {
         const v = inp.value;
         boxes.forEach((x, i) => { x.textContent = v[i] || ''; x.classList.toggle('is-on', !!v[i]); x.classList.toggle('is-cur', i === v.length && v.length < 4); });
@@ -297,7 +299,7 @@
         <div class="reg__hint">Нажмите на квадраты — откроется клавиатура</div>
         <div class="reg__fields"><button class="gbtn reg__btn" id="rNext" disabled>${conf ? 'Завершить' : 'Продолжить'}</button></div>`;
       const inp = $('#rCode', b), boxes = $$('#rCodeBox i', b), btn = $('#rNext', b);
-      setTimeout(() => inp.focus(), 350);
+      $('.codewrap', b).addEventListener('pointerup', () => { try { inp.focus(); } catch (e) {} });
       const paint = () => {
         const v = inp.value;
         boxes.forEach((x, i) => { x.textContent = '•'; x.style.color = v[i] ? '#fff' : 'transparent'; x.classList.toggle('is-on', !!v[i]); x.classList.toggle('is-cur', i === v.length && v.length < 4); });
@@ -372,6 +374,7 @@
     haptic(6);
     if (name === 'home') renderHome(false);
     if (name === 'saves') renderSaves();
+    if (name === 'credit') renderCredit();
   }
   $$('.tab').forEach(t => t.addEventListener('click', () => go(t.dataset.tab)));
 
@@ -877,20 +880,61 @@
     else toast('Демо: раздел «' + b.querySelector('span').textContent + '»');
   }));
   $('#crBtn').addEventListener('click', () => {
+    const cond = [['Ставка', '0,0% годовых'], ['Ежемесячный платёж', '0 ₽'], ['Срок', '∞ навсегда'], ['Переплата', '0 ₽'], ['Кредитная история', 'не смотрим'], ['Одобрение', '100% · всем']];
     sheet({
-      html: `<div class="sheet__t">Кредит наличными</div><div class="sheet__s">Предварительное решение сразу</div>
+      html: `<div class="sheet__t">Безвозвратный кредит</div><div class="sheet__s">Деньги сразу · возвращать не нужно</div>
         <div class="sheet__body">
-          <div class="fcard"><label>Сумма</label><input id="crSum" type="text" inputmode="numeric" value="300${NB}000" autocomplete="off"></div>
-          <div class="chipsrow">${[100000, 300000, 500000, 1000000].map(v => `<button class="chip" data-v="${v}" type="button">${(v / 1000)} тыс ₽</button>`).join('')}</div>
-          <div class="fcard"><label>Срок</label><input id="crTerm" type="text" inputmode="numeric" value="24 мес" autocomplete="off"></div>
+          <div class="fcard"><label>Сколько хотите</label><input id="crSum" type="text" inputmode="numeric" value="300${NB}000" autocomplete="off"></div>
+          <div class="chipsrow">${[100000, 500000, 1000000, 5000000].map(v => `<button class="chip" data-v="${v}" type="button">${v >= 1000000 ? (v / 1000000) + ' млн' : (v / 1000) + ' тыс'} ₽</button>`).join('')}</div>
+          <div class="wildc">${cond.map(c => `<div class="wildc__r"><span>${c[0]}</span><b>${c[1]}</b></div>`).join('')}</div>
+          <div class="wildnote">Дикие условия демо-банка: зачисляем мгновенно, процентов не берём, платить не требуем никогда.</div>
         </div>
-        <div class="sheet__foot"><button class="gbtn" id="crGo" type="button">Отправить заявку</button></div>`,
+        <div class="sheet__foot"><button class="gbtn" id="crGo" type="button">Получить 300${NB}000 ₽</button></div>`,
       onMount(S) {
-        $$('.chip', S.panel).forEach(c => c.addEventListener('click', () => { $('#crSum', S.panel).value = num(c.dataset.v).replace(/\B(?=(\d{3})+(?!\d))/g, NB); haptic(10); }));
-        $('#crGo', S.panel).addEventListener('click', () => { S.close(); proc('Проверяем', 1100).then(() => toast('Одобрено! Демо-кредит не выдаётся 🙂')); });
+        const isum = $('#crSum', S.panel), go = $('#crGo', S.panel);
+        const fmt = v => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, NB);
+        const upd = () => { const v = parseSum(isum.value); go.textContent = 'Получить ' + (v ? rub(v) : '0 ₽'); };
+        isum.addEventListener('input', () => { isum.value = fmt(num(isum.value).slice(0, 7)); $$('.chip', S.panel).forEach(x => x.classList.toggle('is-on', num(x.dataset.v) === num(isum.value))); upd(); });
+        $$('.chip', S.panel).forEach(c => c.addEventListener('click', () => { isum.value = fmt(c.dataset.v); $$('.chip', S.panel).forEach(x => x.classList.toggle('is-on', x === c)); haptic(10); upd(); }));
+        go.addEventListener('click', () => {
+          const v = parseSum(isum.value);
+          if (!v) { toast('Укажите сумму кредита', 'err'); haptic([16, 40, 16]); return; }
+          if (v > 5000000) { toast('Максимум 5 000 000 ₽ — даже безвозвратно', 'err', 3200); haptic([16, 40, 16]); return; }
+          S.close();
+          proc('Одобряем без проверки', 1300).then(() => {
+            state.acc.bal = Math.round((state.acc.bal + v) * 100) / 100;
+            state.loans.unshift({ v, d: Date.now() });
+            const tx = { t: 'Кредит «Безвозвратный»', s: 'Зачисление на счёт •• ' + state.acc.last4 + ' · ставка 0%', c: 'loan', a: v, d: Date.now(), fresh: 1 };
+            state.txs.unshift(tx);
+            save(); renderHome(); renderAcc(); renderHist(); renderCredit();
+            const wb = $('.wallet__bal'); if (wb) { wb.classList.remove('is-hit'); void wb.offsetWidth; wb.classList.add('is-hit'); }
+            showOk({ title: 'Кредит выдан', sum: v, who: 'Счёт •• ' + state.acc.last4, note: 'Ставка 0% · платёж 0 ₽/мес · погашать не требуется', tx });
+          });
+        });
+        upd();
       }
     });
   });
+  function renderCredit() {
+    const box = $('#crList'), empty = $('#crEmpty');
+    if (!box) return;
+    if (!state.loans.length) { box.innerHTML = ''; if (empty) empty.style.display = ''; return; }
+    if (empty) empty.style.display = 'none';
+    const tot = state.loans.reduce((s, l) => s + l.v, 0);
+    box.innerHTML = state.loans.map(l => `
+      <div class="loancard">
+        <div class="loancard__top"><span class="loancard__t">Безвозвратный кредит · ${new Date(l.d).toLocaleDateString('ru-RU')}</span><span class="loancard__badge">0%</span></div>
+        <div class="loancard__sum">${rub(l.v)}</div>
+        <div class="loancard__grid">
+          <div><span>Платёж/мес</span><b>0 ₽</b></div>
+          <div><span>Срок</span><b>∞ навсегда</b></div>
+          <div><span>Переплата</span><b>0 ₽</b></div>
+        </div>
+        <div class="loancard__next">Следующий платёж: <b>никогда</b> · погашать не требуется</div>
+        <button class="dbtn dbtn--sm loancard__pay" type="button">Погасить досрочно</button>
+      </div>`).join('') + `<div class="loantotal">Общий долг: <b>${rub(tot)}</b> · Платить: <b>0 ₽</b></div>`;
+    $$('.loancard__pay', box).forEach(b => b.addEventListener('click', () => { haptic(12); toast('Банк отказался брать деньги. Платить не нужно 🙂', 'ok', 3000); }));
+  }
   $('#crCard').addEventListener('click', () => toast('Заявка на карту принята (демо)'));
 
   /* ───────── чат ───────── */
@@ -921,6 +965,7 @@
     if (/себе|пополн/.test(s)) return 'Нажмите «Пополнить» на экране счёта, выберите сумму — она зачислится мгновенно.';
     if (/бонус|спасиб/.test(s)) return 'У вас ' + state.bonus.toLocaleString('ru-RU') + ' бонусов ChСпасибо — начисляем 2% с переводов.';
     if (/истор|операц/.test(s)) return 'Главный → «История · Ещё»: там все операции с фильтрами и чеками.';
+    if (/кредит|заём|заем|долг|занят/.test(s)) return 'У нас «Безвозвратный кредит»: до 5 000 000 ₽ под 0% годовых, платёж 0 ₽/мес, срок — навсегда, возвращать не нужно. Вкладка «Кредиты» → «Получить деньги».';
     if (/привет|здрав/.test(s)) return 'Привет! Чем помочь: баланс, перевод или оплата?';
     if (/qr|кьюар/.test(s)) return 'Главный → значок сканера слева от плитки счёта. Наведите камеру — оплата пройдёт сама (демо).';
     return 'Записал: «' + q + '». Умею показывать баланс, подсказывать про переводы, бонусы и историю.';
@@ -947,7 +992,6 @@
       bindOps(res);
     }
     q.addEventListener('input', draw); draw();
-    setTimeout(() => q.focus(), 380);
   }
 
   /* ───────── профиль и настройки ───────── */
@@ -1188,7 +1232,7 @@
     applyEye(); paintSbp();
     renderHome(false); shownBal = state.acc.bal; renderHome(true);
     renderAcc(); renderSaves(); renderLife(); renderHist();
-    renderHomeSvc(); renderPayRecent(); bindCredit();
+    renderHomeSvc(); renderPayRecent(); bindCredit(); renderCredit();
     ['homeAds', 'savAds', 'lifeAds', 'payAds', 'crAds'].forEach(renderAds);
     go('home');
   }
